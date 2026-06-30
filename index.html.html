@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오늘의 단어장 · Daily Vocab Deck</title>
+<style>
+  @font-face { font-family: 'fallback-serif'; src: local('Georgia'); }
+  :root{
+    --bg: #1B2430;
+    --bg-soft: #232E3D;
+    --paper: #FFFDF6;
+    --paper-line: #E7E0CC;
+    --ink: #1B2430;
+    --ink-soft: #5B6472;
+    --accent: #E8B73D;
+    --accent-soft: #6E5A22;
+    --ring: #0F151D;
+    --biz: #C97B4A;
+    --dine: #B5563F;
+    --daily: #4C7A5E;
+    --travel: #3D6FA8;
+    --social: #8C5BA6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #25324480 0%, transparent 60%),
+      radial-gradient(900px 500px at 110% 10%, #2c3a4f80 0%, transparent 55%),
+      var(--bg);
+    color: var(--paper);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: 28px 16px 60px;
+  }
+  .wrap{ max-width: 720px; margin: 0 auto; }
+
+  header{ margin-bottom: 22px; }
+  .eyebrow{
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 6px;
+  }
+  h1{
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(28px, 6vw, 38px);
+    font-weight: 700;
+    margin: 0 0 6px;
+    letter-spacing: -.01em;
+    color: #FFFFFF;
+    text-shadow: 0 2px 14px rgba(0,0,0,.35);
+  }
+  .sub{
+    color: #E4E9EF;
+    font-size: 14.5px;
+    line-height: 1.6;
+    margin: 0;
+    max-width: 50ch;
+    text-shadow: 0 1px 10px rgba(0,0,0,.3);
+  }
+
+  /* Tabs styled like index card tabs */
+  .tabs{
+    display:flex;
+    gap: 6px;
+    margin: 26px 0 14px;
+    overflow-x:auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{
+    flex: 0 0 auto;
+    padding: 9px 16px 8px;
+    border-radius: 9px 9px 0 0;
+    border: none;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    color: #B7C0CC;
+    background: var(--bg-soft);
+    transition: all .18s ease;
+    white-space: nowrap;
+  }
+  .tab[data-cat="business"].active{ background: var(--paper); color: var(--biz); }
+  .tab[data-cat="dining"].active{ background: var(--paper); color: var(--dine); }
+  .tab[data-cat="daily"].active{ background: var(--paper); color: var(--daily); }
+  .tab[data-cat="travel"].active{ background: var(--paper); color: var(--travel); }
+  .tab[data-cat="social"].active{ background: var(--paper); color: var(--social); }
+  .tab:not(.active):hover{ color: var(--paper); }
+
+  .deck-panel{
+    background: var(--paper);
+    border-radius: 4px 14px 14px 14px;
+    padding: 20px 18px 24px;
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,.6);
+  }
+  .deck-bar{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    color: var(--ink);
+  }
+  .deck-bar .count{
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .shuffle-btn{
+    display:flex; align-items:center; gap:7px;
+    border: 1.5px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    padding: 9px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease;
+  }
+  .shuffle-btn:hover{ background: #34404f; }
+  .shuffle-btn:active{ transform: scale(.96); }
+  .shuffle-btn svg{ width:14px; height:14px; }
+
+  .cards{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .card{
+    position: relative;
+    border: 1px solid var(--paper-line);
+    border-left: 5px solid var(--cat-color, var(--accent));
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+    background:
+      repeating-linear-gradient(
+        var(--paper) 0px, var(--paper) 27px, #EFE9D6 28px
+      );
+    transition: box-shadow .15s ease;
+  }
+  .card:hover{ box-shadow: 0 6px 18px -10px rgba(0,0,0,.35); }
+
+  .card-top{
+    display:flex;
+    align-items:baseline;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .word-en{
+    font-family: Georgia, serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .word-row{
+    display:flex;
+    align-items:center;
+    gap: 7px;
+  }
+  .speak-btn{
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--paper-line);
+    background: #F4EFE0;
+    color: var(--cat-color, var(--accent-soft));
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor: pointer;
+    transition: background .15s ease, transform .12s ease;
+  }
+  .speak-btn:hover{ background: #ECE4CB; }
+  .speak-btn:active{ transform: scale(.9); }
+  .speak-btn.playing{ background: var(--cat-color, var(--accent)); color: #FFFDF6; }
+  .speak-btn svg{ width: 13px; height: 13px; }
+  .pos{
+    font-family:'Courier New', monospace;
+    font-size: 11px;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .word-ko{
+    font-size: 15px;
+    color: var(--cat-color, var(--accent-soft));
+    font-weight: 600;
+  }
+
+  .reveal{
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height .28s ease, opacity .22s ease, margin-top .28s ease;
+  }
+  .card.open .reveal{
+    max-height: 140px;
+    opacity: 1;
+    margin-top: 10px;
+  }
+  .example{
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    border-top: 1px dashed var(--paper-line);
+    padding-top: 9px;
+  }
+  .example .en{ font-style: italic; }
+  .example .ko{ color: var(--ink-soft); margin-top: 2px; }
+
+  .hint{
+    text-align:center;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  footer{
+    text-align:center;
+    color: #6B7686;
+    font-size: 12px;
+    margin-top: 26px;
+  }
+
+  @media (max-width: 480px){
+    .word-en{ font-size: 17px; }
+    .deck-panel{ padding: 16px 12px 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Daily Vocab Deck</p>
+    <h1>오늘의 단어장</h1>
+    <p class="sub">상황을 고르고 카드를 섞으면, 그 상황에서 자주 쓰는 영어 단어 10개가 무작위로 뽑혀요. 카드를 탭하면 뜻과 예문이 펼쳐집니다.</p>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <div class="deck-panel">
+    <div class="deck-bar">
+      <span class="count" id="count">10 words</span>
+      <button class="shuffle-btn" id="shuffleBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+        다시 섞기
+      </button>
+    </div>
+    <div class="cards" id="cards"></div>
+    <p class="hint">카드를 탭해서 뜻 / 예문 보기</p>
+  </div>
+
+  <footer>매일 새로 섞어서, 상황별 핵심 단어를 익혀보세요.</footer>
+</div>
+
+<script>
+const DATA = {
+  business: { label: "비즈니스", color: "var(--biz)", words: [
+    {w:"deadline", pos:"n.", ko:"마감 기한", ex:"We need to meet the deadline by Friday.", exko:"우리는 금요일까지 마감을 맞춰야 해요."},
+    {w:"agenda", pos:"n.", ko:"안건, 의제", ex:"Let's go over today's agenda first.", exko:"오늘 안건부터 살펴봅시다."},
+    {w:"negotiate", pos:"v.", ko:"협상하다", ex:"They negotiated a better price with the supplier.", exko:"그들은 공급업체와 더 나은 가격을 협상했어요."},
+    {w:"stakeholder", pos:"n.", ko:"이해관계자", ex:"All stakeholders must approve the new plan.", exko:"모든 이해관계자가 새 계획을 승인해야 해요."},
+    {w:"revenue", pos:"n.", ko:"매출, 수익", ex:"Revenue grew by ten percent this quarter.", exko:"이번 분기 매출이 10% 증가했어요."},
+    {w:"budget", pos:"n.", ko:"예산", ex:"We are over budget this month.", exko:"이번 달은 예산을 초과했어요."},
+    {w:"proposal", pos:"n.", ko:"제안서", ex:"Please send the proposal before noon.", exko:"정오 전에 제안서를 보내주세요."},
+    {w:"outsource", pos:"v.", ko:"외주를 주다", ex:"We decided to outsource the design work.", exko:"디자인 작업은 외주를 주기로 했어요."},
+    {w:"merger", pos:"n.", ko:"합병", ex:"The merger was announced this morning.", exko:"오늘 아침 합병이 발표되었어요."},
+    {w:"forecast", pos:"n./v.", ko:"전망(하다)", ex:"Analysts forecast steady growth next year.", exko:"분석가들은 내년에 꾸준한 성장을 전망해요."},
+    {w:"liability", pos:"n.", ko:"부채, 책임", ex:"The company reduced its liabilities last year.", exko:"그 회사는 작년에 부채를 줄였어요."},
+    {w:"onboarding", pos:"n.", ko:"신입 적응 교육", ex:"Onboarding takes about two weeks here.", exko:"여기서는 신입 교육이 약 2주 걸려요."},
+    {w:"deliverable", pos:"n.", ko:"산출물, 결과물", ex:"The final deliverable is due next Monday.", exko:"최종 산출물은 다음 주 월요일까지예요."},
+    {w:"benchmark", pos:"n./v.", ko:"기준(을 비교하다)", ex:"We benchmarked our prices against competitors.", exko:"경쟁사와 가격을 비교해 기준을 세웠어요."},
+    {w:"quarterly", pos:"adj.", ko:"분기별의", ex:"The quarterly report is ready for review.", exko:"분기 보고서가 검토 준비가 되었어요."},
+    {w:"client", pos:"n.", ko:"고객, 의뢰인", ex:"Our biggest client signed a new contract.", exko:"우리의 가장 큰 고객이 새 계약을 체결했어요."},
+    {w:"invoice", pos:"n.", ko:"청구서, 송장", ex:"Please send the invoice by email.", exko:"청구서를 이메일로 보내주세요."},
+    {w:"layoff", pos:"n.", ko:"해고, 정리해고", ex:"The company announced layoffs last week.", exko:"그 회사는 지난주 정리해고를 발표했어요."},
+    {w:"compliance", pos:"n.", ko:"준수, 컴플라이언스", ex:"All staff must complete compliance training.", exko:"모든 직원은 컴플라이언스 교육을 마쳐야 해요."},
+    {w:"prototype", pos:"n.", ko:"시제품", ex:"We tested the prototype with real users.", exko:"실제 사용자들과 시제품을 테스트했어요."},
+    {w:"milestone", pos:"n.", ko:"중요한 단계, 이정표", ex:"Launching the app was a big milestone.", exko:"앱 출시는 큰 이정표였어요."},
+    {w:"turnover", pos:"n.", ko:"이직률, 매출액", ex:"Employee turnover dropped this year.", exko:"올해 이직률이 떨어졌어요."},
+    {w:"feasible", pos:"adj.", ko:"실현 가능한", ex:"Is this plan financially feasible?", exko:"이 계획은 재정적으로 실현 가능한가요?"},
+    {w:"endorse", pos:"v.", ko:"지지하다, 보증하다", ex:"The board endorsed the new strategy.", exko:"이사회는 새 전략을 지지했어요."},
+    {w:"overhead", pos:"n.", ko:"운영비, 간접비", ex:"We cut overhead by renting a smaller office.", exko:"더 작은 사무실을 빌려 운영비를 줄였어요."},
+  ]},
+  dining: { label: "식사", color: "var(--dine)", words: [
+    {w:"reservation", pos:"n.", ko:"예약", ex:"I'd like to make a reservation for two.", exko:"두 명 예약하고 싶어요."},
+    {w:"appetizer", pos:"n.", ko:"전채, 애피타이저", ex:"We'll start with an appetizer to share.", exko:"같이 먹을 애피타이저부터 시작할게요."},
+    {w:"entrée", pos:"n.", ko:"메인 요리", ex:"What entrée would you recommend?", exko:"어떤 메인 요리를 추천하세요?"},
+    {w:"medium-rare", pos:"adj.", ko:"미디엄 레어로", ex:"I'll have my steak medium-rare, please.", exko:"스테이크는 미디엄 레어로 주세요."},
+    {w:"allergic", pos:"adj.", ko:"알레르기가 있는", ex:"I'm allergic to shellfish.", exko:"저는 갑각류 알레르기가 있어요."},
+    {w:"split the bill", pos:"phr.", ko:"더치페이하다", ex:"Let's just split the bill evenly.", exko:"그냥 똑같이 더치페이하자."},
+    {w:"tip", pos:"n./v.", ko:"팁(을 주다)", ex:"We usually tip fifteen to twenty percent.", exko:"보통 15~20% 정도 팁을 줘요."},
+    {w:"refill", pos:"n./v.", ko:"리필", ex:"Could I get a refill on my coffee?", exko:"커피 리필해 주실 수 있나요?"},
+    {w:"to go", pos:"phr.", ko:"포장해서", ex:"Can I get this to go?", exko:"이거 포장해 갈 수 있을까요?"},
+    {w:"served", pos:"v.", ko:"제공되는, 나오는", ex:"The soup is served warm.", exko:"수프는 따뜻하게 나와요."},
+    {w:"side dish", pos:"n.", ko:"곁들임 요리, 사이드", ex:"What side dishes come with the meal?", exko:"식사에 어떤 사이드가 같이 나오나요?"},
+    {w:"savory", pos:"adj.", ko:"짭짤하고 감칠맛 나는", ex:"This sauce has a rich, savory flavor.", exko:"이 소스는 풍부하고 감칠맛이 나요."},
+    {w:"reheat", pos:"v.", ko:"데우다", ex:"Just reheat the leftovers in the microwave.", exko:"남은 음식은 전자레인지에 데우기만 하면 돼요."},
+    {w:"vegetarian", pos:"adj./n.", ko:"채식주의자(의)", ex:"Do you have any vegetarian options?", exko:"채식 메뉴가 있나요?"},
+    {w:"check, please", pos:"phr.", ko:"계산서 주세요", ex:"Excuse me, check please.", exko:"저기요, 계산서 주세요."},
+    {w:"reservation deposit", pos:"n.", ko:"예약금", ex:"This restaurant requires a small deposit.", exko:"이 식당은 소액 예약금이 필요해요."},
+    {w:"course", pos:"n.", ko:"코스 요리", ex:"They offer a five-course tasting menu.", exko:"5코스 테이스팅 메뉴를 제공해요."},
+    {w:"garnish", pos:"n./v.", ko:"고명, 장식하다", ex:"The dish was garnished with fresh herbs.", exko:"그 요리는 신선한 허브로 장식되어 있었어요."},
+    {w:"bland", pos:"adj.", ko:"싱거운, 맛없는", ex:"The soup tasted a bit bland.", exko:"수프가 조금 싱거웠어요."},
+    {w:"reservation cancellation", pos:"n.", ko:"예약 취소", ex:"I need to cancel my reservation.", exko:"예약을 취소해야 해요."},
+    {w:"server", pos:"n.", ko:"종업원", ex:"Our server was very friendly and quick.", exko:"우리 종업원은 친절하고 빨랐어요."},
+    {w:"portion", pos:"n.", ko:"양, 분량", ex:"The portions here are quite generous.", exko:"여기는 양이 꽤 많아요."},
+    {w:"takeout", pos:"n.", ko:"포장 음식, 테이크아웃", ex:"We ordered takeout instead of cooking.", exko:"요리 대신 테이크아웃을 주문했어요."},
+    {w:"dietary restriction", pos:"n.", ko:"식이 제한", ex:"Please let us know about any dietary restrictions.", exko:"식이 제한이 있으면 알려주세요."},
+    {w:"craving", pos:"n.", ko:"먹고 싶은 갈망", ex:"I have a craving for spicy noodles.", exko:"매운 면이 너무 먹고 싶어요."},
+  ]},
+  daily: { label: "일상", color: "var(--daily)", words: [
+    {w:"errand", pos:"n.", ko:"심부름, 볼일", ex:"I have a few errands to run today.", exko:"오늘 처리할 볼일이 몇 개 있어요."},
+    {w:"laundry", pos:"n.", ko:"빨래", ex:"I need to do the laundry this evening.", exko:"오늘 저녁에 빨래를 해야 해요."},
+    {w:"commute", pos:"n./v.", ko:"통근(하다)", ex:"My commute takes about forty minutes.", exko:"제 통근 시간은 40분 정도예요."},
+    {w:"groceries", pos:"n.", ko:"식료품", ex:"I'm going to buy groceries after work.", exko:"퇴근 후에 장 보러 갈 거예요."},
+    {w:"procrastinate", pos:"v.", ko:"미루다", ex:"I always procrastinate on cleaning my room.", exko:"방 청소는 항상 미루게 돼요."},
+    {w:"chores", pos:"n.", ko:"집안일", ex:"We split the household chores evenly.", exko:"집안일은 똑같이 나눠서 해요."},
+    {w:"alarm clock", pos:"n.", ko:"알람 시계", ex:"My alarm clock didn't go off this morning.", exko:"오늘 아침에 알람이 울리지 않았어요."},
+    {w:"leftovers", pos:"n.", ko:"남은 음식", ex:"I'll just eat leftovers for lunch.", exko:"점심은 그냥 남은 음식 먹을게요."},
+    {w:"nap", pos:"n./v.", ko:"낮잠(자다)", ex:"I took a short nap after lunch.", exko:"점심 먹고 짧게 낮잠을 잤어요."},
+    {w:"declutter", pos:"v.", ko:"정리하다, 물건을 줄이다", ex:"I spent the weekend decluttering my closet.", exko:"주말에 옷장을 정리했어요."},
+    {w:"appointment", pos:"n.", ko:"약속, 예약", ex:"I have a dentist appointment tomorrow.", exko:"내일 치과 예약이 있어요."},
+    {w:"running late", pos:"phr.", ko:"늦고 있는", ex:"Sorry, I'm running late this morning.", exko:"죄송해요, 오늘 아침 늦고 있어요."},
+    {w:"overslept", pos:"v.", ko:"늦잠을 잤다", ex:"I overslept and missed the bus.", exko:"늦잠을 자서 버스를 놓쳤어요."},
+    {w:"routine", pos:"n.", ko:"일과, 루틴", ex:"I have a simple morning routine.", exko:"저는 간단한 아침 루틴이 있어요."},
+    {w:"recharge", pos:"v.", ko:"재충전하다", ex:"I just want to recharge this weekend.", exko:"이번 주말에는 그냥 재충전하고 싶어요."},
+    {w:"utility bill", pos:"n.", ko:"공과금", ex:"I need to pay the utility bills today.", exko:"오늘 공과금을 내야 해요."},
+    {w:"tidy up", pos:"phr.v.", ko:"정돈하다, 치우다", ex:"Let's tidy up before guests arrive.", exko:"손님 오기 전에 좀 치우자."},
+    {w:"on the way", pos:"phr.", ko:"가는 중인", ex:"I'm on the way home now.", exko:"지금 집에 가는 중이에요."},
+    {w:"set a reminder", pos:"phr.", ko:"알림을 설정하다", ex:"I'll set a reminder for the meeting.", exko:"회의 알림을 설정해 둘게요."},
+    {w:"day off", pos:"n.", ko:"휴일", ex:"I'm taking a day off on Friday.", exko:"금요일에 휴가를 낼 거예요."},
+    {w:"household", pos:"n./adj.", ko:"가정(의)", ex:"We split household expenses fifty-fifty.", exko:"가계 지출을 반반씩 나눠요."},
+    {w:"habit", pos:"n.", ko:"습관", ex:"I'm trying to build a reading habit.", exko:"독서 습관을 만들려고 노력 중이에요."},
+    {w:"unwind", pos:"v.", ko:"긴장을 풀다", ex:"I like to unwind with a podcast at night.", exko:"밤에는 팟캐스트를 들으며 긴장을 풀어요."},
+    {w:"errand list", pos:"n.", ko:"볼일 목록", ex:"My errand list keeps getting longer.", exko:"제 볼일 목록이 계속 길어지고 있어요."},
+    {w:"sort out", pos:"phr.v.", ko:"해결하다, 정리하다", ex:"I need to sort out my schedule.", exko:"제 일정을 정리해야 해요."},
+  ]},
+  travel: { label: "여행", color: "var(--travel)", words: [
+    {w:"itinerary", pos:"n.", ko:"여행 일정", ex:"Can you send me the full itinerary?", exko:"전체 여행 일정 좀 보내주실 수 있나요?"},
+    {w:"layover", pos:"n.", ko:"경유", ex:"We have a three-hour layover in Tokyo.", exko:"도쿄에서 3시간 경유가 있어요."},
+    {w:"boarding pass", pos:"n.", ko:"탑승권", ex:"Please have your boarding pass ready.", exko:"탑승권을 미리 준비해 주세요."},
+    {w:"customs", pos:"n.", ko:"세관", ex:"We had to go through customs first.", exko:"먼저 세관을 통과해야 했어요."},
+    {w:"luggage", pos:"n.", ko:"수하물, 짐", ex:"My luggage didn't arrive with the flight.", exko:"제 수하물이 비행기와 함께 도착하지 않았어요."},
+    {w:"check-in", pos:"n./v.", ko:"체크인", ex:"Check-in starts at three in the afternoon.", exko:"체크인은 오후 3시부터 시작해요."},
+    {w:"currency exchange", pos:"n.", ko:"환전", ex:"Where's the nearest currency exchange?", exko:"가장 가까운 환전소가 어디인가요?"},
+    {w:"itemize", pos:"v.", ko:"항목별로 정리하다", ex:"Please itemize the hotel charges.", exko:"호텔 요금을 항목별로 정리해 주세요."},
+    {w:"jet lag", pos:"n.", ko:"시차 적응", ex:"I'm still recovering from jet lag.", exko:"아직 시차 적응 중이에요."},
+    {w:"visa", pos:"n.", ko:"비자", ex:"Do I need a visa for this trip?", exko:"이번 여행에 비자가 필요한가요?"},
+    {w:"departure gate", pos:"n.", ko:"출발 게이트", ex:"Our departure gate just changed.", exko:"출발 게이트가 방금 바뀌었어요."},
+    {w:"sightseeing", pos:"n.", ko:"관광", ex:"We spent the morning sightseeing downtown.", exko:"아침에는 시내 관광을 했어요."},
+    {w:"accommodation", pos:"n.", ko:"숙박 시설", ex:"We booked our accommodation in advance.", exko:"숙박 시설을 미리 예약했어요."},
+    {w:"local cuisine", pos:"n.", ko:"현지 음식", ex:"Trying local cuisine is my favorite part of travel.", exko:"현지 음식을 먹어보는 게 여행에서 제일 좋아요."},
+    {w:"souvenir", pos:"n.", ko:"기념품", ex:"I bought a few souvenirs for my family.", exko:"가족들을 위해 기념품을 몇 개 샀어요."},
+    {w:"connecting flight", pos:"n.", ko:"환승 항공편", ex:"We barely caught our connecting flight.", exko:"환승 항공편을 겨우 탔어요."},
+    {w:"itinerary change", pos:"n.", ko:"일정 변경", ex:"We made a last-minute itinerary change.", exko:"막판에 일정을 변경했어요."},
+    {w:"passport control", pos:"n.", ko:"여권 심사", ex:"The line at passport control was long.", exko:"여권 심사 줄이 길었어요."},
+    {w:"round trip", pos:"n.", ko:"왕복", ex:"I booked a round-trip ticket to Paris.", exko:"파리행 왕복 항공권을 예약했어요."},
+    {w:"travel insurance", pos:"n.", ko:"여행자 보험", ex:"It's smart to get travel insurance.", exko:"여행자 보험을 드는 게 현명해요."},
+    {w:"landmark", pos:"n.", ko:"명소, 랜드마크", ex:"This tower is the city's main landmark.", exko:"이 탑은 그 도시의 주요 랜드마크예요."},
+    {w:"off the beaten path", pos:"phr.", ko:"잘 알려지지 않은", ex:"We like exploring places off the beaten path.", exko:"우리는 잘 알려지지 않은 곳을 탐험하는 걸 좋아해요."},
+    {w:"time zone", pos:"n.", ko:"시간대", ex:"They're in a different time zone.", exko:"그들은 다른 시간대에 있어요."},
+    {w:"overbooked", pos:"adj.", ko:"초과 예약된", ex:"The flight was overbooked, so we got vouchers.", exko:"항공편이 초과 예약되어 바우처를 받았어요."},
+    {w:"pack light", pos:"phr.", ko:"짐을 가볍게 싸다", ex:"I always try to pack light for trips.", exko:"여행 갈 때는 항상 짐을 가볍게 싸려고 해요."},
+  ]},
+  social: { label: "사교/모임", color: "var(--social)", words: [
+    {w:"catch up", pos:"phr.v.", ko:"근황을 나누다", ex:"Let's catch up over coffee sometime.", exko:"언제 커피 마시면서 근황 얘기하자."},
+    {w:"hang out", pos:"phr.v.", ko:"놀다, 어울리다", ex:"Do you want to hang out this weekend?", exko:"이번 주말에 같이 놀래?"},
+    {w:"RSVP", pos:"v.", ko:"참석 여부를 알리다", ex:"Please RSVP by next Monday.", exko:"다음 주 월요일까지 참석 여부 알려주세요."},
+    {w:"small talk", pos:"n.", ko:"가벼운 대화, 스몰토크", ex:"I'm not great at small talk.", exko:"저는 스몰토크에 서툴러요."},
+    {w:"icebreaker", pos:"n.", ko:"분위기를 풀어주는 활동", ex:"Let's start with a quick icebreaker.", exko:"가벼운 아이스브레이커로 시작합시다."},
+    {w:"potluck", pos:"n.", ko:"각자 음식을 가져오는 모임", ex:"We're having a potluck this Saturday.", exko:"이번 토요일에 포트럭 모임이 있어요."},
+    {w:"reach out", pos:"phr.v.", ko:"연락하다", ex:"Feel free to reach out anytime.", exko:"언제든지 편하게 연락 주세요."},
+    {w:"awkward", pos:"adj.", ko:"어색한", ex:"There was an awkward silence at first.", exko:"처음엔 어색한 침묵이 흘렀어요."},
+    {w:"get-together", pos:"n.", ko:"모임", ex:"We're planning a small get-together this weekend.", exko:"이번 주말에 작은 모임을 계획하고 있어요."},
+    {w:"plus-one", pos:"n.", ko:"동반 손님", ex:"Can I bring a plus-one to the wedding?", exko:"결혼식에 동반 손님을 데려가도 될까요?"},
+    {w:"host", pos:"n./v.", ko:"주최자, 주최하다", ex:"She's hosting the party at her place.", exko:"그녀가 자기 집에서 파티를 주최해요."},
+    {w:"farewell party", pos:"n.", ko:"송별회", ex:"We threw him a farewell party.", exko:"그를 위해 송별회를 열었어요."},
+    {w:"acquaintance", pos:"n.", ko:"지인", ex:"He's more of an acquaintance than a friend.", exko:"그는 친구라기보다는 지인에 가까워요."},
+    {w:"break the ice", pos:"phr.", ko:"어색함을 깨다", ex:"A joke helped break the ice.", exko:"농담 하나로 어색함을 깼어요."},
+    {w:"reconnect", pos:"v.", ko:"다시 연락하다", ex:"We reconnected after years apart.", exko:"오랜만에 다시 연락하게 됐어요."},
+    {w:"casual", pos:"adj.", ko:"편안한, 격식 없는", ex:"It's a casual dinner, nothing fancy.", exko:"편안한 저녁 자리예요, 격식 없이요."},
+    {w:"network", pos:"v.", ko:"인맥을 쌓다", ex:"I went to the event to network.", exko:"인맥을 쌓으려고 그 행사에 갔어요."},
+    {w:"show up", pos:"phr.v.", ko:"나타나다, 참석하다", ex:"He showed up an hour late.", exko:"그는 한 시간 늦게 나타났어요."},
+    {w:"gathering", pos:"n.", ko:"모임", ex:"It was a small family gathering.", exko:"작은 가족 모임이었어요."},
+    {w:"raincheck", pos:"n.", ko:"다음을 기약함", ex:"Can I take a raincheck on dinner?", exko:"저녁은 다음에 다시 잡아도 될까요?"},
+    {w:"introvert", pos:"n.", ko:"내향적인 사람", ex:"I'm an introvert, so big parties tire me.", exko:"저는 내향적이라 큰 파티는 좀 지쳐요."},
+    {w:"banter", pos:"n.", ko:"가벼운 농담, 만담", ex:"They always have fun banter going on.", exko:"그들은 항상 재미있는 만담을 주고받아요."},
+    {w:"mingle", pos:"v.", ko:"어울리다, 섞이다", ex:"Take some time to mingle with guests.", exko:"손님들과 어울릴 시간을 좀 가지세요."},
+    {w:"plans fell through", pos:"phr.", ko:"계획이 무산되다", ex:"Our plans fell through at the last minute.", exko:"막판에 계획이 무산됐어요."},
+    {w:"text back", pos:"phr.v.", ko:"답장을 보내다", ex:"Sorry I didn't text back sooner.", exko:"더 빨리 답장 못해서 미안해요."},
+  ]},
+};
+
+const order = ["business","dining","daily","travel","social"];
+let current = "business";
+let activeWords = [];
+
+function pickRandom(arr, n){
+  const copy = [...arr];
+  for(let i = copy.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i+1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, n);
+}
+
+function renderTabs(){
+  const tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = order.map(key => {
+    const cat = DATA[key];
+    return `<button class="tab${key===current?' active':''}" data-cat="${key}">${cat.label}</button>`;
+  }).join('');
+  tabsEl.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      current = btn.dataset.cat;
+      shuffle();
+      renderTabs();
+    });
+  });
+}
+
+function renderCards(){
+  const cardsEl = document.getElementById('cards');
+  const color = DATA[current].color;
+  cardsEl.innerHTML = activeWords.map((item, i) => `
+    <div class="card" style="--cat-color:${color}" data-i="${i}">
+      <div class="card-top">
+        <span class="word-row">
+          <span class="word-en">${item.w}</span>
+          <button class="speak-btn" data-word="${item.w.replace(/"/g,'&quot;')}" aria-label="발음 듣기" title="발음 듣기 (미국식)">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16.5 12c0-1.77-.77-3.29-2-4.31v8.62c1.23-1.02 2-2.54 2-4.31z"/><path d="M14.5 4.97v2.06c2.89 1.05 5 3.81 5 7.07s-2.11 6.02-5 7.07v2.06c4.01-1.09 7-4.74 7-9.13s-2.99-8.04-7-9.13z"/></svg>
+          </button>
+        </span>
+        <span class="pos">${item.pos}</span>
+      </div>
+      <div class="word-ko">${item.ko}</div>
+      <div class="reveal">
+        <div class="example">
+          <div class="en">"${item.ex}"</div>
+          <div class="ko">${item.exko}</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  cardsEl.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', () => card.classList.toggle('open'));
+  });
+  cardsEl.querySelectorAll('.speak-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      speakWord(btn.dataset.word, btn);
+    });
+  });
+  document.getElementById('count').textContent = `${activeWords.length} words · ${DATA[current].label}`;
+}
+
+let usVoice = null;
+function pickUSVoice(){
+  const voices = window.speechSynthesis.getVoices();
+  usVoice = voices.find(v => v.lang === 'en-US' && /female|samantha|zira|ava/i.test(v.name))
+    || voices.find(v => v.lang === 'en-US')
+    || voices.find(v => v.lang && v.lang.startsWith('en'))
+    || null;
+}
+if ('speechSynthesis' in window) {
+  pickUSVoice();
+  window.speechSynthesis.onvoiceschanged = pickUSVoice;
+}
+
+function speakWord(text, btn){
+  if (!('speechSynthesis' in window)) {
+    alert('이 브라우저는 음성 재생을 지원하지 않아요.');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'en-US';
+  if (usVoice) utter.voice = usVoice;
+  utter.rate = 0.92;
+  if (btn) {
+    btn.classList.add('playing');
+    utter.onend = () => btn.classList.remove('playing');
+    utter.onerror = () => btn.classList.remove('playing');
+  }
+  window.speechSynthesis.speak(utter);
+}
+
+function shuffle(){
+  activeWords = pickRandom(DATA[current].words, 10);
+  renderCards();
+}
+
+document.getElementById('shuffleBtn').addEventListener('click', shuffle);
+
+renderTabs();
+shuffle();
+</script>
+</body>
+</html>
